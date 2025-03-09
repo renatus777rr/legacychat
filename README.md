@@ -1,6 +1,6 @@
 # legacychat
 A just.... chat in old legacy style. 
 
-Install: Just run Setup.exe that u downloaded from releases. Also to run the client, first u need run from the main folder of legacy chat file named legacychat_server.exe, to run on router enter ip 127.0.0.1 80. to run public make an public server ip or port and enter it in the command line app. After u started server open the client enter ip and port that u entered in server, then sign up and chat! maybe if u on router nobodys there... But u can make an public hotspot to chat with ur friends...
+Install(NEW): From update 1.2.0 no installing. Run legacychat_server.py that u downloaded and enter: If u want host on router (u need make friend connect to ur hotspot or router to chat with him) enter ip 127.0.0.1, port 80. If u want on server, enter the ip of server and port. After entering it runs a server. Now open client enter ip and port. And then chat with someone.
 
 Open-Source code is available
