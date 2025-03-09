@@ -6,7 +6,7 @@ import json
 class LegacyChatServer:
     def __init__(self, host, port):
         self.server_address = (host, port)
-        # Data store: username -> {'password': str, 'buddies': dict, 'messages': list}
+        # Data store: username -> {'password': str, 'buddies': dict, 'messages': list, 'status': str}
         self.users = {}
         self.lock = threading.Lock()
         self.running = True
@@ -67,6 +67,10 @@ class LegacyChatServer:
             return self.get_messages(request)
         elif action == "send_file":
             return self.send_file(request)
+        elif action == "update_status":
+            return self.update_status(request)
+        elif action == "get_buddy_status":
+            return self.get_buddy_status(request)
         else:
             return {"status": "error", "message": "Unknown action"}
 
@@ -78,7 +82,7 @@ class LegacyChatServer:
         with self.lock:
             if username in self.users:
                 return {"status": "error", "message": "Username already exists"}
-            self.users[username] = {"password": password, "buddies": {}, "messages": []}
+            self.users[username] = {"password": password, "buddies": {}, "messages": [], "status": "online"}
             print(f"New signup: {username}")
         return {"status": "success", "message": "User signed up"}
 
@@ -93,8 +97,7 @@ class LegacyChatServer:
                 return {"status": "error", "message": "User does not exist"}
             if user["password"] != password:
                 return {"status": "error", "message": "Incorrect password"}
-        # Return buddy list (simply the buddy names here)
-        buddy_list = list(user["buddies"].values())
+        buddy_list = [{"username": buddy, "name": self.users[username]["buddies"][buddy]} for buddy in self.users[username]["buddies"]]
         return {"status": "success", "message": "User logged in", "buddies": buddy_list}
 
     def add_buddy(self, request):
@@ -134,7 +137,6 @@ class LegacyChatServer:
         with self.lock:
             if recipient not in self.users:
                 return {"status": "error", "message": "Recipient does not exist"}
-            # Mark the message as a file transfer with an extra "type" field.
             file_msg = {"from": sender, "filename": filename, "filedata": filedata, "type": "file"}
             self.users[recipient]["messages"].append(file_msg)
         return {"status": "success", "message": "File sent"}
@@ -147,9 +149,30 @@ class LegacyChatServer:
             if username not in self.users:
                 return {"status": "error", "message": "User not found"}
             messages = self.users[username]["messages"]
-            # Clear the inbox after retrieval.
             self.users[username]["messages"] = []
         return {"status": "success", "messages": messages}
+
+    def update_status(self, request):
+        username = request.get("username")
+        status = request.get("status")
+        if not username or not status:
+            return {"status": "error", "message": "Username and status required"}
+        with self.lock:
+            if username not in self.users:
+                return {"status": "error", "message": "User not found"}
+            self.users[username]["status"] = status
+        return {"status": "success", "message": "Status updated"}
+
+    def get_buddy_status(self, request):
+        username = request.get("username")
+        buddy_username = request.get("buddy_username")
+        if not username or not buddy_username:
+            return {"status": "error", "message": "Username and buddy_username required"}
+        with self.lock:
+            if username not in self.users or buddy_username not in self.users:
+                return {"status": "error", "message": "User or buddy not found"}
+            status = self.users[buddy_username].get("status", "offline")
+        return {"status": "success", "status": status}
 
 if __name__ == "__main__":
     host = input("Enter server IP (e.g., 0.0.0.0): ").strip() or "0.0.0.0"
